@@ -116,7 +116,12 @@ function processFile(licenseText, file) {
 			console.log('It seems that ' + file + ' already has a copyright declaration');
 			return;
 		}
-		content = licenseText + '\n\n' + content;
+		if(content.substring(0, 2) == '#!'){
+			var firstLineBreak = content.indexOf('\n') + 1 || content.length;
+			content = content.substring(0, firstLineBreak) + '\n' + licenseText + '\n\n' + content.substring(firstLineBreak);
+		}else{
+			content = licenseText + '\n\n' + content;
+		}
 		fs.writeFile(file, content);
 		console.log('Add license to '+file);
 	});
