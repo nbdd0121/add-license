@@ -30,29 +30,31 @@ var argv = parseArg(process.argv.slice(2));
 var fs = require('fs');
 var path = require('path');
 
-function parseArg(args){
-	var ret = {_:[]};
-	for(var i=0;i<args.length;i++){
+function parseArg(args) {
+	var ret = {
+		_: []
+	};
+	for (var i = 0; i < args.length; i++) {
 		var argItem = args[i];
-		if(argItem[0]=='-'){
-			if(argItem[1]=='-'){
+		if (argItem[0] == '-') {
+			if (argItem[1] == '-') {
 				argItem = argItem.substring(1);
 			}
 			var pair = argItem.substring(1);
 			var eq = pair.indexOf('=');
-			if(eq==-1){
-				ret[pair]='';
-			}else{
-				ret[pair.substring(0, eq)] = pair.substring(eq+1);
+			if (eq == -1) {
+				ret[pair] = '';
+			} else {
+				ret[pair.substring(0, eq)] = pair.substring(eq + 1);
 			}
-		}else{
+		} else {
 			ret._.push(argItem);
 		}
 	}
 	return ret;
 }
 
-function error(msg){
+function error(msg) {
 	console.log(msg);
 	process.exit(1);
 }
@@ -66,8 +68,8 @@ function replacePlaceholder(text, year, owner, orag) {
 }
 
 function limitColumn(text, column) {
-	return text.split("\n").map(function(line){
-		if(line.length<=column){
+	return text.split("\n").map(function(line) {
+		if (line.length <= column) {
 			return line;
 		}
 
@@ -75,59 +77,59 @@ function limitColumn(text, column) {
 		var ident = line.search(/[a-z]/i);
 
 		// Cannot proceed
-		if(ident < 0 || ident >= column){
+		if (ident < 0 || ident >= column) {
 			return line;
 		}
 
 		// Seperate prefix and create ident string
 		var prefix = line.substring(0, ident);
-		var identText = Array(ident+1).join(' ');
+		var identText = Array(ident + 1).join(' ');
 
 		var ret = prefix;
 		var lineRest = column - ident;
 		var tokens = line.substring(ident).split(' ');
 
-		while(tokens.length) {
+		while (tokens.length) {
 			var tok = tokens.shift();
-			if(tok.length + 1 > lineRest){
+			if (tok.length + 1 > lineRest) {
 				ret += '\n' + identText + tok + ' ';
 				lineRest = column - ident - tok.length - 1;
-			}else{
+			} else {
 				ret += tok + ' ';
 				lineRest -= tok.length + 1;
 			}
 		}
 		return ret;
-	}).join('\n');
+	}).join('\n').replace(/ +\n/g, '\n');
 }
 
 function processFile(licenseText, file) {
-	if(typeof(licenseText)=="function") {
+	if (typeof(licenseText) == "function") {
 		licenseText = licenseText(file);
 	}
-	if(!licenseText){
+	if (!licenseText) {
 		return;
 	}
-	fs.readFile(file, function(err, data){
-		if(err)
+	fs.readFile(file, function(err, data) {
+		if (err)
 			throw err;
 		var content = data.toString();
-		if(content.search(/copyright/i)!=-1){
+		if (content.search(/copyright/i) != -1) {
 			console.log('It seems that ' + file + ' already has a copyright declaration');
 			return;
 		}
-		if(content.substring(0, 2) == '#!'){
+		if (content.substring(0, 2) == '#!') {
 			var firstLineBreak = content.indexOf('\n') + 1 || content.length;
 			content = content.substring(0, firstLineBreak) + '\n' + licenseText + '\n\n' + content.substring(firstLineBreak);
-		}else{
+		} else {
 			content = licenseText + '\n\n' + content;
 		}
 		fs.writeFile(file, content);
-		console.log('Add license to '+file);
+		console.log('Add license to ' + file);
 	});
 }
 
-if(!argv.author){
+if (!argv.author) {
 	error('Expected --author');
 }
 
@@ -141,37 +143,39 @@ var licenseText = limitColumn(replacePlaceholder(loadFile(__dirname + '/license/
 var type = argv.type || 'auto';
 
 var processer = {
-	c: function(licenseText){
-		return '/*\n'+licenseText.split("\n").map(function(line) {
+	c: function(licenseText) {
+		return '/*\n' + licenseText.split("\n").map(function(line) {
 			return ' * ' + line;
-		}).join("\n")+'\n */';
+		}).join("\n") + '\n */';
 	},
-	'c++':function(licenseText){
+	'c++': function(licenseText) {
 		return processer.c(licenseText);
 	},
-	js:function(licenseText){
+	js: function(licenseText) {
 		return processer.c(licenseText);
 	},
-	bash:function(licenseText){
+	bash: function(licenseText) {
 		return licenseText.split("\n").map(function(line) {
 			return '# ' + line;
 		}).join("\n");
 	},
-	makefile:function(licenseText){
+	makefile: function(licenseText) {
 		return processer.bash(licenseText);
 	},
-	auto:function(licenseText){
+	auto: function(licenseText) {
 		return function(filename) {
-			if(filename == 'LICENSE') {
+			if (filename == 'LICENSE') {
 				return licenseText;
-			}else if(filename == 'Makefile') {
+			} else if (filename == 'Makefile') {
 				return processer.makefile(licenseText);
 			}
 			var extname = path.extname(filename);
-			switch(extname){
-				case '.sh': return processer.bash(licenseText);
+			switch (extname) {
+				case '.sh':
+					return processer.bash(licenseText);
 				case '.c':
-				case '.h': return processer.c(licenseText);
+				case '.h':
+					return processer.c(licenseText);
 				case '.cc':
 				case '.cpp':
 				case '.cxx':
@@ -181,27 +185,29 @@ var processer = {
 				case '.hpp':
 				case '.hxx':
 				case '.h++':
-				case '.H': return processer['c++'](licenseText);
-				case '.js': return processer.js(licenseText);
+				case '.H':
+					return processer['c++'](licenseText);
+				case '.js':
+					return processer.js(licenseText);
 				default:
-					console.log('Unrecognized extension name '+extname);
+					console.log('Unrecognized extension name ' + extname);
 					return null;
 			}
 		}
 	}
 }
 
-if(processer[type]){
+if (processer[type]) {
 	licenseText = processer[type](licenseText);
-}else{
-	error('Unknown --type='+type);
+} else {
+	error('Unknown --type=' + type);
 }
 
-if(argv.preview!==undefined){
+if (argv.preview !== undefined) {
 	console.log(typeof licenseText == 'function' ? licenseText('LICENSE') : licenseText);
 	process.exit(0);
 }
 
-for(var i=0;i<argv._.length;i++){
+for (var i = 0; i < argv._.length; i++) {
 	processFile(licenseText, argv._[i]);
 }
